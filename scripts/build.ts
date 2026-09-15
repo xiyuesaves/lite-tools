@@ -4,7 +4,7 @@ import { basename, join, extname, dirname } from "node:path";
 import { execSync } from "node:child_process";
 import chokidar from "chokidar";
 import * as sass from "sass";
-import * as AdmZip from "adm-zip";
+import AdmZip from "adm-zip";
 
 const isDev = process.argv.includes("--watch");
 const isAlpha = process.argv.includes("--alpha");
