@@ -123,6 +123,18 @@ function updateConfig(newConfig) {
 }
 
 /**
+ * 启动时先按默认配置初始化
+ *
+ * 旧版本要等 proxySend 从 QQ 的 rmipc 载荷里探测到 uid 才会调用 loadUserConfig，
+ * 该探测在新版 QQ 上可能永不命中，config 会一直是空对象：设置页读到空 options 后
+ * 构建功能列表时抛错，只渲染出折叠标题；主进程功能同样静默失效。
+ * 这里启动时就初始化一次，之后若探测命中，仍会照旧切换为该账号的独立配置。
+ */
+if (!Object.keys(config).length) {
+  loadUserConfig(null);
+}
+
+/**
  * 初始化 ipcMain 监听
  */
 ipcMain.on("LiteLoader.lite_tools.getOptions", (event) => {
