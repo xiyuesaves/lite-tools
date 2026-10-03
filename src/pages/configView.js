@@ -33,6 +33,25 @@ async function onConfigView(view) {
   // 调试用，等待5秒后再执行
   // await new Promise((res) => setTimeout(res, 3000));
 
+  // 主进程配置尚未初始化时（旧版本会等主窗口首条消息才 loadUserConfig），
+  // options 为空对象，后续 options.sidebar.top 等读取会抛错，
+  // 页面只渲染出折叠标题、所有功能列表永远 hidden。这里等配置就绪再继续构建。
+  if (Object.keys(options).length === 0) {
+    log("主进程配置尚未就绪，等待配置初始化");
+    await new Promise((resolve) => {
+      const timer = setInterval(() => {
+        if (Object.keys(options).length > 0) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 200);
+      setTimeout(() => {
+        clearInterval(timer);
+        resolve();
+      }, 10 * 1000);
+    });
+  }
+
   document.querySelectorAll(".nav-item.liteloader,.nav-bar.liteloader .nav-item").forEach((node) => {
     if (node.textContent === "轻量工具箱") {
       node.querySelector(".q-icon").innerHTML = pluginIcon;
