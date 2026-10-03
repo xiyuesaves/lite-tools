@@ -65,6 +65,9 @@ if (Object.keys(options).length > 0) {
 function onSettingWindowCreated(view) {
   import("./pages/configView.js").then((module) => {
     module.onConfigView(view);
+  }).catch((e) => {
+    // 不加 catch 时动态加载失败只会变成未处理的 Promise 拒绝，设置页表现为空白且无任何提示
+    console.error("[lite_tools] 配置界面加载失败:", e);
   });
 }
 
