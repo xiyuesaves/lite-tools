@@ -64,6 +64,8 @@ async function initSettings(view: HTMLDivElement, config: Config) {
   initSwitchButton(view, config);
   // 初始化下拉菜单
   initSelectMenu(view, config);
+  // 初始化配置项联动显隐
+  initLinkedVisibility(view, config);
   // 初始化精简功能
   initSidebar(view, config);
   // 初始化撤回相关选项
@@ -539,6 +541,39 @@ function initSwitchButton(view: HTMLDivElement, config: Config) {
       // switchButtons();
     });
   });
+}
+
+// 按配置值联动显隐（元素上标注 data-show-when="配置路径=期望值"）
+function initLinkedVisibility(view: HTMLDivElement, config: Config) {
+  const items = Array.from(view.querySelectorAll<HTMLElement>("[data-show-when]"));
+  if (!items.length) return;
+
+  const parseRule = (el: HTMLElement) => {
+    const rule = el.getAttribute("data-show-when") || "";
+    const separator = rule.lastIndexOf("=");
+    if (separator < 0) return null;
+    return { path: rule.slice(0, separator), value: rule.slice(separator + 1) };
+  };
+
+  const apply = (path: string, value: unknown) => {
+    for (const el of items) {
+      const rule = parseRule(el);
+      if (!rule || rule.path !== path) continue;
+      el.classList.toggle("hidden", String(value) !== rule.value);
+    }
+  };
+
+  const paths = new Set<string>();
+  for (const el of items) {
+    const rule = parseRule(el);
+    if (!rule) continue;
+    paths.add(rule.path);
+    apply(rule.path, getValueByPath(config, rule.path));
+  }
+
+  for (const path of paths) {
+    view.addEventListener(path, (event) => apply(path, (event as CustomEvent).detail));
+  }
 }
 
 // 初始化下拉菜单
