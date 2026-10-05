@@ -1,7 +1,6 @@
 import { ipcMain, dialog, BrowserWindow, shell } from "electron";
-import fsPromises from "node:fs/promises";
-import path from "node:path";
 import { mainWindow } from "@/main/utils/windowTracker";
+import { copyFileCandidates } from "@/main/utils/copyFileCandidates";
 
 function setupIpcMain() {
   // 返回窗口id
@@ -24,11 +23,9 @@ function setupIpcMain() {
     shell.openExternal(url);
   });
   // 通用文件复制
-  ipcMain.handle("lite_tools.copyFile", async (event, currentPath: string, targetPath: string) => {
+  ipcMain.handle("lite_tools.copyFile", async (event, currentPath: string | string[], targetPath: string) => {
     try {
-      const finalPath = path.join(targetPath, path.basename(currentPath));
-
-      await fsPromises.copyFile(currentPath, finalPath);
+      const finalPath = await copyFileCandidates(currentPath, targetPath);
 
       return {
         success: true,

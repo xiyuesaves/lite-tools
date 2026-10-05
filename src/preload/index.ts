@@ -34,7 +34,7 @@ const exposeFunctions = {
   updateRecentStickers: (sticker: Sticker) => ipcRenderer.send("lite_tools.stickerStore.updateRecentStickers", sticker),
 
   // 通用操作接口
-  copyFile: (sourceFilePath: string, targetFilePath: string) =>
+  copyFile: (sourceFilePath: string | string[], targetFilePath: string) =>
     ipcRenderer.invoke("lite_tools.copyFile", sourceFilePath, targetFilePath),
 
   // 背景相关

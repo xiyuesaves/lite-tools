@@ -17,6 +17,7 @@ import { createLogger } from "@/renderer/utils/createLogger";
 import { ContextMenu, ContextMenuItem, ContextMenuType } from "@/renderer/components/contextMenu";
 import { toastManager } from "@/renderer/modules/toastManager";
 import { onComponentMount } from "@/renderer/modules/vueComponentTracker";
+import { collectStickerSourcePaths } from "@/common/utils/stickerSource";
 
 import type { StickerPack as StickerPackType } from "@/common/types/localStickers";
 
@@ -41,7 +42,7 @@ declare global {
 }
 
 let rawContextMenu: HTMLElement;
-let picPath: string;
+let picPaths: string[] = [];
 
 async function setupLocalStickers() {
   await configStore.ready;
@@ -63,9 +64,9 @@ async function setupLocalStickers() {
           const targetElement = elements.find((el: any) => el.elementType === 11 || el.elementType === 2);
           if (targetElement) {
             if (targetElement.elementType === 11) {
-              picPath = targetElement.marketFaceElement?.staticFacePath as string;
+              picPaths = [targetElement.marketFaceElement?.staticFacePath as string].filter(Boolean);
             } else if (targetElement.elementType === 2) {
-              picPath = targetElement.picElement?.sourcePath as string;
+              picPaths = collectStickerSourcePaths(targetElement.picElement);
             }
             return true;
           }
@@ -83,7 +84,7 @@ async function setupLocalStickers() {
     ) {
       addToLocalStickerContextMenu.item = buildStickerMenu(
         stickerContainer.stickerStore.stickerPacks,
-        picPath,
+        picPaths,
         () => rawContextMenu,
       );
 
@@ -208,7 +209,7 @@ function getCustomSummary(path: string): string {
   return "";
 }
 
-function buildStickerMenu(packs: StickerPackType[], sourceFilePath: string, getRawContextMenu: any): ContextMenuType {
+function buildStickerMenu(packs: StickerPackType[], sourceFilePaths: string[], getRawContextMenu: any): ContextMenuType {
   // 内部使用的临时类型，多了一个 path 用于构建树时去重和查找
   type TempMenuNode = ContextMenuType & { path: string };
   const treeChildren: TempMenuNode[] = [];
@@ -268,7 +269,7 @@ function buildStickerMenu(packs: StickerPackType[], sourceFilePath: string, getR
             e.preventDefault();
             console.log(`添加到贴纸集: ${label}`);
             // patha: sourceFilePath, pathb: packPath (目标文件夹)
-            const result = await lite_tools.copyFile(sourceFilePath, packPath);
+            const result = await lite_tools.copyFile(sourceFilePaths, packPath);
             if (result.success) {
               toastManager.show("添加成功", "success", 3000);
             } else {
@@ -286,7 +287,7 @@ function buildStickerMenu(packs: StickerPackType[], sourceFilePath: string, getR
           e.stopPropagation();
           e.preventDefault();
           log(`添加到贴纸集: ${label}`);
-          const result = await lite_tools.copyFile(sourceFilePath, packPath);
+          const result = await lite_tools.copyFile(sourceFilePaths, packPath);
           if (result.success) {
             toastManager.show("添加成功", "success", 3000);
           } else {
