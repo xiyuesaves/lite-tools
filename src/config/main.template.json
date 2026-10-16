@@ -150,7 +150,10 @@
     }
   ],
   "global": {
+    "rkeySource": "remote",
     "rkeyServerUrl": "https://rkey.furrycloud.top",
+    "napcatRkeyUrl": "",
+    "napcatRkeyToken": "",
     "httpProxy": ""
   }
 }

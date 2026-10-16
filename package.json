@@ -27,6 +27,7 @@
     "build": "ts-node -P ./tsconfig.json scripts/build.ts",
     "build:alpha": "ts-node -P ./tsconfig.json scripts/build.ts --alpha",
     "dev": "ts-node -P ./tsconfig.json scripts/build.ts --watch",
+    "test:rkey": "ts-node -P ./tsconfig.test.json scripts/tests/rkey.test.ts",
     "check:types": "tsc --build --emitDeclarationOnly"
   },
   "keywords": [],
