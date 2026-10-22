@@ -316,15 +316,25 @@ export class StickerContainer extends LitElement {
     }
   };
 
+  /** 面板里正在重命名，或右键菜单还开着时，不能因为鼠标移开就收起面板。 */
+  private isPanelBusy() {
+    if (this.contextMenu?.show) return true;
+    const active = document.activeElement;
+    return active instanceof HTMLInputElement && this.renderRoot?.contains(active) === true;
+  }
+
   private mouseLeaveHandler = (e: MouseEvent) => {
     const localStickers = configStore.value.localStickers;
-    if (localStickers.hoverShow) {
-      this.mouseEnterInIcon = false;
-      setTimeout(() => {
-        if (this.mouseEnterInIcon) return;
-        this.showPanel = false;
-      }, 100);
-    }
+    if (!localStickers.hoverShow) return;
+    // 正在编辑或菜单打开时直接放过，否则输入框会跟着面板一起消失
+    if (this.isPanelBusy()) return;
+
+    this.mouseEnterInIcon = false;
+    setTimeout(() => {
+      if (this.mouseEnterInIcon) return;
+      if (this.isPanelBusy()) return;
+      this.showPanel = false;
+    }, 100);
   };
 
   protected async firstUpdated(): Promise<void> {
