@@ -1,4 +1,6 @@
 import fs from "node:fs";
+import path from "node:path";
+import fsPromises from "node:fs/promises";
 import { ipcMain } from "electron";
 import chokidar from "chokidar";
 import { createLogger } from "@/main/utils/createLogger";
@@ -8,6 +10,7 @@ import { tgStickerDownloader } from "./tgStickerDownloader";
 import { recentStickersManager } from "./recentStickersManager";
 import { createThrottledDispatcher } from "@/common/createThrottledDispatcher";
 import { configManager } from "@/main/modules/configManager";
+import { reportError, reportLog } from "@/main/utils/reportError";
 
 import type { FSWatcher } from "chokidar";
 import type { StickerStore, StickerPack, StickerPathItem, Sticker } from "@/common/types/localStickers";
@@ -49,9 +52,51 @@ class LocalStickers {
 
   public setup() {
     this.bindIpcMain();
-    this.update(configManager.value);
-    configManager.onConfigUpdate((config) => this.update(config));
+    // update 是异步的，必须显式接住异常，否则出错只会变成没人看见的 unhandledRejection
+    void this.update(configManager.value).catch((err) => {
+      log("初始化贴纸监听失败", err);
+      reportError("本地贴纸初始化", err);
+    });
+    configManager.onConfigUpdate((config) => {
+      void this.update(config).catch((err) => {
+        log("更新贴纸监听失败", err);
+        reportError("本地贴纸更新", err);
+      });
+    });
     log("初始化完成");
+    reportLog("本地贴纸 setup 已调用");
+  }
+
+  /**
+   * 不依赖 chokidar 的兜底扫描：直接把目录里的贴纸文件喂给管理器，
+   * 避免监听器在某些环境下不触发初始扫描时，贴纸集一个都登记不上。
+   */
+  private async scanDirectoryOnce(rootPath: string) {
+    const walk = async (dir: string, depth: number): Promise<void> => {
+      if (depth > 10) return;
+      let entries;
+      try {
+        entries = await fsPromises.readdir(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          await walk(fullPath, depth + 1);
+          continue;
+        }
+        try {
+          const stats = await fsPromises.stat(fullPath);
+          stickerPacksManager.onEvent("add", fullPath, stats);
+        } catch {
+          // 单个文件读取失败不影响整体扫描
+        }
+      }
+    };
+    await walk(rootPath, 0);
+    log("兜底扫描完成");
+    reportLog("贴纸兜底扫描完成");
   }
 
   private bindIpcMain() {
@@ -102,6 +147,7 @@ class LocalStickers {
     }
 
     log("更新监听目录:", targetPath);
+    reportLog("贴纸监听目录: " + targetPath);
 
     // 重置状态
     this.initializedReady = false;
@@ -139,9 +185,16 @@ class LocalStickers {
         depth: 10, // 限制目录深度，防止过度扫描子目录导致性能问题
       });
 
+      // 并行做一次兜底扫描，保证初始登记不依赖监听器
+      void this.scanDirectoryOnce(targetPath).catch((err) => {
+        log("兜底扫描失败", err);
+        reportError("贴纸目录兜底扫描", err);
+      });
+
       // 监听 ready 事件来放行 IPC
       this.watcher.on("ready", () => {
         log("首次扫描完成");
+        reportLog("贴纸首次扫描完成");
         this.initializedReady = true;
         this.notifyStickerStoreUpdated();
       });
@@ -165,6 +218,7 @@ class LocalStickers {
 
       this.watcher.on("error", async (err: any) => {
         log("监听失败", err);
+        reportError("贴纸目录监听", err);
         await this.offListener();
         this.stickerStore = this.createStickerStoreResult("failed", `监听文件夹失败: ${err.message}`);
         this.currentListeningPath = "";
@@ -172,6 +226,7 @@ class LocalStickers {
       });
     } catch (err: any) {
       log("监听失败", err);
+      reportError("贴纸目录监听(初始化)", err);
       await this.offListener();
       this.stickerStore = this.createStickerStoreResult("failed", `监听文件夹失败: ${err.message}`);
       this.currentListeningPath = "";
