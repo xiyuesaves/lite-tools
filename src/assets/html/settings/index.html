@@ -908,16 +908,65 @@
       <hr class="horizontal-dividing-line" />
       <li class="vertical-list-item">
         <div>
+          <h2>RKey 来源</h2>
+          <span class="secondary-text">远程服务需返回 private_rkey、group_rkey、expired_time 三个字段</span>
+        </div>
+        <div class="setting-select" data-config="global.rkeySource">
+          <div class="setting-view text_color show-icon" data-value="未初始化"></div>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M21 8L12 17L3 8" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"></path>
+          </svg>
+          <div class="setting-option">
+            <div class="setting-item" data-value="remote">远程服务</div>
+            <div class="setting-item" data-value="napcat">NapCat</div>
+          </div>
+        </div>
+      </li>
+      <hr class="horizontal-dividing-line" data-show-when="global.rkeySource=remote" />
+      <li class="vertical-list-item" data-show-when="global.rkeySource=remote">
+        <div>
           <h2>rkey接口</h2>
         </div>
       </li>
-      <li class="select-path vertical-list-item">
+      <li class="select-path vertical-list-item" data-show-when="global.rkeySource=remote">
         <input
           placeholder="https://rkey.furrycloud.top/"
           class="input-text text_color"
           type="text"
           spellcheck="false"
           data-config="global.rkeyServerUrl"
+        />
+      </li>
+      <hr class="horizontal-dividing-line" data-show-when="global.rkeySource=napcat" />
+      <li class="vertical-list-item" data-show-when="global.rkeySource=napcat">
+        <div>
+          <h2>NapCat WebUI 地址</h2>
+          <span class="secondary-text">NapCat WebUI 的访问地址</span>
+        </div>
+      </li>
+      <li class="select-path vertical-list-item" data-show-when="global.rkeySource=napcat">
+        <input
+          placeholder="http://127.0.0.1:6099/"
+          class="input-text text_color"
+          type="text"
+          spellcheck="false"
+          data-config="global.napcatRkeyUrl"
+        />
+      </li>
+      <hr class="horizontal-dividing-line" data-show-when="global.rkeySource=napcat" />
+      <li class="vertical-list-item" data-show-when="global.rkeySource=napcat">
+        <div>
+          <h2>NapCat WebUI Token</h2>
+          <span class="secondary-text">NapCat 设置 - 网络配置 中的 WebUI token</span>
+        </div>
+      </li>
+      <li class="select-path vertical-list-item" data-show-when="global.rkeySource=napcat">
+        <input
+          placeholder="WebUI token"
+          class="input-text text_color"
+          type="text"
+          spellcheck="false"
+          data-config="global.napcatRkeyToken"
         />
       </li>
     </ul>
