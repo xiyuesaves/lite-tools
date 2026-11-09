@@ -43,13 +43,17 @@ class AioStore {
   }
 
   async setupCaptureAIO(): Promise<void> {
-    log("开始初始化");
-    const { value: aioStore } = await waitForInstance(".aio.vue-component", "proxy.commonAioStore");
-    this.handleCurAioData(aioStore);
-    this.status = InitStatus.Initialized;
-    this.resolveReady();
-    log("初始化完成", this.curAioData);
-    return;
+    try {
+      log("开始初始化");
+      const { value: aioStore } = await waitForInstance(".aio.vue-component", "proxy.commonAioStore", 30000);
+      this.handleCurAioData(aioStore);
+      this.status = InitStatus.Initialized;
+      this.resolveReady();
+      log("初始化完成", this.curAioData);
+      return;
+    } catch (err) {
+      log("初始化失败，获取Aio数据时出错");
+    }
   }
 
   handleCurAioData(aioStore: any) {
