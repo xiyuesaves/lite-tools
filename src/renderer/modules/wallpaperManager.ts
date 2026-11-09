@@ -155,24 +155,24 @@ class WallpaperManager {
     document.body.classList.toggle("lt-wallpaper-remove-overlay", configStore.value.interface.wallpaper.removeOverlay);
     document.body.classList.toggle(
       "lt-wallpaper-blur-chat-input-area",
-      configStore.value.interface.wallpaper.blur.chatInputArea
+      configStore.value.interface.wallpaper.blur.chatInputArea,
     );
     document.body.classList.toggle(
       "lt-wallpaper-blur-recent-contact",
-      configStore.value.interface.wallpaper.blur.recentContact
+      configStore.value.interface.wallpaper.blur.recentContact,
     );
     document.body.classList.toggle("lt-wallpaper-blur-group-box", configStore.value.interface.wallpaper.blur.groupBox);
 
-    const opacity = parseInt(configStore.value.interface.wallpaper.opacity);
+    const opacity = configStore.value.interface.wallpaper.opacity;
     document.documentElement.style.setProperty(
       "--lt-wallpaper-opacity",
-      String((Number.isNaN(opacity) ? 50 : opacity) / 100)
+      String((Number.isNaN(opacity) ? 50 : opacity) / 100),
     );
 
-    const containerOpacity = parseInt(configStore.value.interface.wallpaper.containerOpacity);
+    const containerOpacity = configStore.value.interface.wallpaper.containerOpacity;
     document.documentElement.style.setProperty(
       "--lt-wallpaper-container-opacity",
-      String((Number.isNaN(containerOpacity) ? 50 : containerOpacity) / 100)
+      String((Number.isNaN(containerOpacity) ? 50 : containerOpacity) / 100),
     );
   }
 
