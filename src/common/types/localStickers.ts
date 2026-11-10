@@ -12,6 +12,8 @@ type StickerConfig = {
   index: number;
   icon?: string;
   url?: string;
+  /** 上一次同步时记录的目录名，用于判断目录是否被改名 */
+  dirName?: string;
 };
 
 type InternalStickerPack = {
@@ -19,6 +21,8 @@ type InternalStickerPack = {
   index: number;
   icon?: string;
   dirPath: string;
+  /** 上一次同步时记录的目录名，写回 sticker.json 时一并保留 */
+  dirName?: string;
   stickerPaths: Map<string, number | undefined>;
 };
 

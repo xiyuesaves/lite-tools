@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import type { StickerPack, StickerConfig, InternalStickerPack } from "@/common/types/localStickers";
+import { resolveStickerPackLabel } from "@/main/utils/stickerPackLabel";
 
 // 定义支持的图片后缀
 const SUPPORTED_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".webp"]);
@@ -48,19 +49,25 @@ class StickerPacksManager {
         const configPath = path.join(dirPath, "sticker.json");
         if (fs.existsSync(configPath)) {
           const config = JSON.parse(fs.readFileSync(configPath, "utf-8")) as StickerConfig;
+          const sync = resolveStickerPackLabel(config.label, config.dirName, this.baseName(dirPath));
           pack = {
-            label: config.label || this.baseName(dirPath),
+            label: sync.label || this.baseName(dirPath),
             index: config.index || 0,
             icon: config.icon || undefined,
             dirPath: dirPath,
+            dirName: sync.dirName,
             stickerPaths: new Map<string, number | undefined>(),
           };
+          if (sync.changed) {
+            this.writeConfig(dirPath, { ...config, label: sync.label, dirName: sync.dirName });
+          }
         } else {
           pack = {
             label: this.baseName(dirPath),
             index: 0,
             icon: undefined,
             dirPath: dirPath,
+            dirName: this.baseName(dirPath),
             stickerPaths: new Map<string, number | undefined>(),
           };
           this.writeConfig(pack.dirPath, pack);
@@ -71,6 +78,7 @@ class StickerPacksManager {
           index: 0,
           icon: undefined,
           dirPath: dirPath,
+          dirName: this.baseName(dirPath),
           stickerPaths: new Map<string, number | undefined>(),
         };
         this.writeConfig(pack.dirPath, pack, true);
@@ -82,10 +90,8 @@ class StickerPacksManager {
   }
 
   private baseName(stickerPath: string) {
-    if (stickerPath === this.rootPath) {
-      return path.basename(stickerPath);
-    }
-    return stickerPath.replace(this.rootPath + "/", "");
+    const relativePath = path.relative(this.rootPath, stickerPath).replace(/\\/g, "/");
+    return relativePath || path.basename(stickerPath);
   }
 
   private writeConfig(dirPath: string, pack: StickerConfig, rewrite = false) {
@@ -95,6 +101,9 @@ class StickerPacksManager {
       : fs.existsSync(configPath)
         ? JSON.parse(fs.readFileSync(configPath, "utf-8"))
         : {};
+    // dirName 是改名判定用的基线，必须写进文件，否则下次读取时永远当作「首次」，
+    // 目录改名后就再也同步不到标签了
+    const dirName = pack.dirName || (currentConfig as StickerConfig).dirName;
     fs.writeFileSync(
       configPath,
       JSON.stringify(
@@ -105,6 +114,7 @@ class StickerPacksManager {
             index: pack.index,
             icon: pack.icon,
             url: pack.url,
+            ...(dirName ? { dirName } : {}),
           },
         },
         null,
@@ -121,12 +131,17 @@ class StickerPacksManager {
     if (!fs.existsSync(configPath)) return;
 
     const config = JSON.parse(fs.readFileSync(configPath, "utf-8")) as StickerConfig;
+    const sync = resolveStickerPackLabel(config.label, config.dirName, this.baseName(dirPath));
     this.stickerPacks.set(dirPath, {
       ...pack,
-      label: config.label,
-      index: config.index,
-      icon: config.icon,
+      label: sync.label || this.baseName(dirPath),
+      index: config.index ?? 0,
+      icon: config.icon || undefined,
+      dirName: sync.dirName,
     });
+    if (sync.changed) {
+      this.writeConfig(dirPath, { ...config, label: sync.label, dirName: sync.dirName });
+    }
   }
 
   private addSticker(stickerPath: string, stats?: fs.Stats) {
